@@ -1,0 +1,144 @@
+---
+title: "HW 9"
+author: "SDS322E"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+---
+
+```{r global_options, include=FALSE}
+#DO NOT EDIT THIS CHUNK OR ANYTHING ABOVE IT!
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F, tidy=T, tidy.opts=list(width.cutoff=50), R.options=list(max.print=100,dplyr.print_max=100))
+```
+
+## Alice Gee, ag67642
+
+**Please submit as a knitted HTML file on Canvas before the due date**
+
+*For all questions, include the R commands/functions that you used to find your answer. Answers without supporting code will not receive credit.*
+
+> **Review of how to submit this assignment**
+> All homework assignments will be completed using R Markdown. These `.Rmd` files consist of text/syntax (formatted using Markdown) alongside embedded R code. 
+> When you have completed the assignment (by adding R code inside codeblocks and supporting text outside of the codeblocks), create your document as follows:
+
+> - Click the arrow next to the "Knit" button (above) 
+> - Choose "Knit to HTML" and wait; fix any errors if applicable
+> - Go to Files pane and put checkmark next to the correct HTML file
+> - Click on the blue gear icon ("More") and click Export
+> - Download the file and then upload to Canvas
+
+---
+
+### Question 1.1 (3 pts)
+
+##### Take a look at the `swiss` dataset. It contains measurements of 6 socioecnomic variables for 47 French-speaking Swiss provinces/cantons from 1888. Variables are all recorded on a 0-100 scale and include `Fertility`, `Agriculture` (% in an agricultural occupation), `Examination` (% earning highest honors on army exam), `Education` (% with education beyond primary school), `Catholic` (% Catholic), and `Infant.Mortality` (% of live births surviving less than 1 year).
+
+##### First, create a correlation matrix and visualize it with a correlation heatmap using ggplot2. Include `scale_fill_gradient2()` and label your tiles with the actual correlations using `geom_text(aes(label=...))`. Discuss what you see. Specifically, which variables are strongly positively correlated? Which variables are strongly negatively correlated? Which variable seems to be the least correlated with things like education and agriculture?
+
+```{R}
+library(tidyverse)
+library(cluster)
+swiss %>% select_if(is.numeric) %>% cor %>% as.data.frame %>%
+  rownames_to_column %>% pivot_longer(-1) %>%
+  ggplot(aes(rowname,name,fill=value)) + geom_tile() +
+  geom_text(aes(label=round(value,2))) + xlab("") + ylab("") + coord_fixed() + 
+  scale_fill_gradient2(low = "cadetblue1", mid = "cornflowerblue", high = "blueviolet")
+```
+*The variables that are strongly positively correlated are education & examination. The variables that are strongly negatively correlated are examination & agriculture, examination & fertility, education & agriculture, and education & fertility. Variables like catholic and infant mortality has little correlation with education, and infant mortality has little correlation with agriculture.*
+
+### Question 1.2 (6 pts)
+
+Now, using the `swiss` dataset (no need to standardize data first), perform a cluster analysis by (1) choosing the number of clusters that maximizes average silhouette width (try k=2 up to k=10), and (2) running the PAM clustering algorithm on the raw data for that many clusters (save the object as swiss_pam). Show all code for both steps. 
+
+Now, discuss the following: How good is the cluster solution in terms of overall average silhouette width? Which two provinces are the medoids (the representatives of their clusters)? What variables are they most similar on? Most different?
+
+```{R}
+sil_width<-vector() #empty vector to hold mean sil width
+for(i in 2:10){  
+  kms <- kmeans(swiss,centers=i) #compute k-means solution for each k
+  sil <- silhouette(kms$cluster,dist(swiss)) #get sil widths
+  sil_width[i]<-mean(sil[,3]) #take averages (higher is better)
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)
+
+set.seed(322)
+swiss_pam <- swiss %>% pam(k=2)
+plot(swiss_pam,which=2)
+
+swiss %>% slice(swiss_pam$id.med)
+```
+*The overall cluster solution has a reasonable structure, with an average silhoutte width of 0.63. Yverdon and Monthey are the mediods, in which they are most similar on `infant.mortality` and most different on `catholic`. *
+
+
+### Question 1.3 (3 pts)
+
+##### We used six variables here but can only really visualize data in up to three dimensions (and 2D is usually easier). To help us get a sense of the clusters, let's take the `swiss` data, add the PAM cluster assignments as a factor or character variable (e.g., using mutate; call it `cluster`), and then plot every pairwise scatterplot using the `ggpairs(cols= 1:6, aes(color=cluster))` function. Give it a second to run (it is creating a lot of plots).
+
+#### Which variable shows the greatest difference between the two clusters? Which variable shows the least difference between the two clusters? In terms of only `Fertility`, `Agriculture`, and `Examination`, use the information in the plots to describe/characterize the two clusters.
+
+```{R message = F}
+library(GGally)
+swiss <- swiss %>% mutate(cluster = as.factor(swiss_pam$clustering))
+swiss %>% ggpairs(cols= 1:6, aes(color=cluster))
+```
+*The variable `catholic` shows the greatest difference between the clusters, while `education` shows the least difference between the clusters. In terms of `fertility` and `agriculture`, cluster 1 tends to have lower fertility and agriculture percentages, while in terms of `examination`, cluster 1 tends to have higher examination percentages.*
+
+### Question 2.1 (4 pts)
+
+##### Read in the `ability` dataset. It contains six ability test scores for 112 individuals. The variable `general` is a non-verbal measure of general intelligence; `picture` is a picture-completion test; `blocks` is a block design task;  `maze` is a maze-completion task; `reading` is a reading comprehension task; `vocabulary` is a vocabulary test. 
+
+##### Below, we take the dataset and perform principal component analysis on it. Keep PCs until you hit 85% of the total variance. Interpret each of those PCs by looking at the signs and magnitudes of the loadings: What do the PCs represent in terms of the original variables? What does it mean to score high/low on each of these components?
+
+```{R}
+ability <- read.csv("https://raw.githubusercontent.com/nathanielwoodward/ability/main/ability.csv")
+princomp(ability, cor=T) -> pca1
+eigval <- pca1$sdev^2
+varprop = round(eigval/sum(eigval), 2)
+
+ggplot() + geom_bar(aes(y=varprop, x=1:6), stat="identity") + xlab("") + geom_path(aes(y=varprop, x=1:6)) + 
+  geom_text(aes(x=1:6, y=varprop, label=round(varprop, 2)), vjust=1, col="white", size=5) + 
+  scale_y_continuous(breaks=seq(0, .6, .2), labels = scales::percent) + 
+  scale_x_continuous(breaks=1:10)
+
+round(cumsum(eigval)/sum(eigval), 2)
+```
+*We will keep PC1, PC2, and PC3. PCs represent the underlying structure of variance among all the variables, gathered in an uncorrelated method. The score of each component indicates how much of the overall variance in the dataset it describes.*
+
+
+### Question 2.2 (1 pts)
+
+##### The `scores` matrix inside of the `pca1` object contains the Principal Component scores for each of the 112 individuals for each of the 6 PCs. The first column (`Comp.1`) contains scores for all individuals on PC1, the second column (`Comp.2`) contains scores on PC2, etc. You can access it with `pca1$scores`.
+
+##### To show that the 6 Principcal Components are uncorrelated with each other, compute the correlation matrix of all PC scores and pipe it into round(10).
+
+```{R}
+cor(pca1$scores) %>% round(10)
+```
+
+
+### Question 2.3 (3 pts)
+
+##### Take the matrix of PC scores, convert it to a dataframe, and add in the `general` column from the original `ability` dataset so it appears in this dataframe too (e.g., using mutate or bind_cols). Now, use this to create a plot of PC1 and PC2 scores for all 112 individuals using ggplot and color the points by the `general` variable. What do you notice? What is the correlation between scores on the `general` ability test and scores on `PC1`?
+
+```{R}
+pca1_scores <- data.frame(pca1$scores)
+pca1_scores <- pca1_scores %>% mutate(general = ability$general)
+pca1_scores %>% ggplot(aes(x = Comp.1, y = Comp.2, color = general)) + 
+  geom_point() + coord_fixed()
+pca1_scores %>% summarize(cor(Comp.1, Comp.2, use = "pair"))
+pca1_scores %>% summarize(cor(Comp.1, general, use = "pair"))
+```
+*When plotted against each other, PC1 and PC2 show no correlation and appear to be randomly scattered across the plot. Compared to the 1.80818e-16	correlation between Comp.1 and Comp.2, the correlation between the scores on the general ability test and the scores on PC1 is a strong positive correlation at 0.8723049.*
+
+
+
+
+```{R, echo=F}
+## DO NOT DELETE THIS BLOCK!
+sessionInfo()
+Sys.time()
+Sys.info()
+```

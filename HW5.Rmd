@@ -1,0 +1,180 @@
+---
+title: "HW 5"
+author: "SDS322E"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+---
+
+```{r global_options, include=FALSE}
+#DO NOT EDIT THIS CHUNK OR ANYTHING ABOVE IT!
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F, tidy=T, tidy.opts=list(width.cutoff=50), R.options=list(max.print=100,dplyr.print_max=100))
+```
+
+## Alice Gee, ag67642
+
+**Please submit as a knitted HTML file on Canvas before the due date.**
+
+*For all questions, include the R commands/functions that you used to find your answer. Answers without supporting code will not receive credit.*
+
+> #### Review of how to submit this assignment
+>All homework assignments will be completed using R Markdown. These `.Rmd` files consist of >text/syntax (formatted using Markdown) alongside embedded R code. 
+>When you have completed the assignment (by adding R code inside codeblocks and supporting text outside of the codeblocks), create your document as follows:
+
+> - Click the arrow next to the "Knit" button (above) 
+> - Choose "Knit to HTML"
+> - Go to Files pane and put checkmark next to the correct HTML file
+> - Click on the blue gear icon ("More") and click Export
+> - Download the file and then upload to Canvas
+
+---
+
+## Question 1
+
+### 1.1 (2 pts)
+
+###### All subsequent code will be done using the tidyverse (with a focus on `dplyr`), so we need to load this package. We also want to look at the `penguins` dataset which is inside the palmerpenguins package, so we can grab this as well
+
+```{r message=FALSE}
+library(tidyverse)
+penguins <- palmerpenguins::penguins
+```
+
+###### Using the function `filter()`, pick all the rows/observaions in the `penguins` dataset from the year 2007 and store the result as a new object called `penguins_2007`. Compare the number of observations/rows in the original `penguins` dataset with your new `penguins_2007` dataset in words.
+
+```{R}
+penguins_2007 <- penguins %>% filter(year == 2007)
+glimpse(penguins)
+glimpse(penguins_2007)
+```
+*Compared to the original `penguins` dataset that has 344 observations, the new `penguins_2007` dataset only has 110 observations. The number of observations in `penguins_2007` is approximately 32% of the number of observations in `penguins`.*
+
+### 1.2 (1 pt)
+
+###### Return all the rows in the `penguins_2007` dataset where `bill_length_mm` is between 45 and 55, (doesn't matter if inclusive of 45 and 55 or not, since no observations have those exact values).
+
+```{R}
+penguins_2007 %>% filter(bill_length_mm > 45) %>% filter(bill_length_mm < 55)
+```
+
+### 1.3 (1 pt)
+
+###### Are there any cases in the `penguins_2007` dataset for which the ratio of `bill_length_mm` to `bill_depth_mm` exceeds 3.5? For now, use only `filter()` to find out. If so, for which species of penguins is this true?
+
+```{R}
+penguins_2007 %>% filter((bill_length_mm/bill_depth_mm) > 3.5)
+```
+*Yes, there are cases where the ratio is greater than 3.5. The Gentoo species of penguins shows a ratio of `bill_length_mm` to `bill_depth_mm` that exceeds 3.5.*
+
+### 1.4 (1 pt)
+
+###### Take your `penguins_2007` dataset and using `select()`, drop/delete the column `year`, since it isn't necessary. Overwrite the `penguins_2007` dataset so it no longer contains that column.
+
+```{R}
+penguins_2007 <- penguins_2007 %>% select(-year)
+glimpse((penguins_2007))
+```
+
+## Question 2
+
+### 2.1 (1 pt)
+
+###### Using the function `mutate()`, take `penguins_2007` and create a new data column that contains the ratio of `bill_length_mm` to `bill_depth_mm` (call it `bill_ratio`). Overwrite `penguins_2007` so it contains this new column
+
+```{R}
+penguins_2007 <- penguins_2007 %>% mutate(bill_ratio = (bill_length_mm/bill_depth_mm))
+```
+
+### 2.2 (2 pts)
+
+###### Take the `penguins_2007` data and, using `group_by` along with either `arrange` and `slice` or `slice_min`, for *each species* find the three penguins with the shortest bill length. Of those 9 penguins, how many have the value female for the sex variable? 
+
+
+```{R}
+penguins_2007 %>% arrange(bill_length_mm) %>% group_by(species) %>%
+  slice(1:3) 
+penguins_2007 %>% arrange(bill_length_mm) %>% group_by(species) %>%
+  slice(1:3) %>% count(sex=="female")
+```
+*7 of the 9 penguins (3 Chinstrap, 3 Gentoo, 1 Adelie) that had the shortest beaks were female. The other two penguins [Adelie] consisted of a male and an unidentified penguin sex.*
+
+## Question 3
+
+### 3.1 (2 pts)
+
+Using `penguins_2007`, calculate the mean and standard deviation of `bill_ratio` each species using `group_by` and `summarize`. Drop NAs from `bill_ratio` for these computations (e.g., using the argument na.rm=T) so you have values for each species. Which species has the greatest average `bill_ratio`?
+
+```{R}
+penguins_2007 %>% group_by(species) %>% summarise(mean(bill_ratio, na.rm=T))
+penguins_2007 %>% group_by(species) %>% summarise(sd(bill_ratio, na.rm = T))
+```
+*The Gentoo species has the greatest average bill ratio.*
+
+### 3.2 (1 pts)
+
+With `penguins_2007`, using either `summarize(n())` or using `count`, report the number of observations for each species-island combination (note that you'll need to group by both variables!). Which species appears on all three islands? 
+
+```{R}
+penguins_2007 %>% group_by(species, island) %>% summarise(n())
+```
+*The Adelie species appears on all three islands.*
+
+
+## Question 4
+
+### 4.1 (2 pts)
+
+Take the `penguins_2007` data set you have created and using `ggplot` create a single plot showing the distribution of `body_mass_g` for male and female penguins separately, faceted by species (use facet_grid to give each species its own row). Which species has the most NAs for `sex`? Which species shows the least sexual dimorphism (i.e., which shows the greatest overlap of male/female size distributions)?
+
+```{R warning=F}
+penguins_2007 %>% ggplot(aes(x=body_mass_g, fill = sex)) + geom_density() + facet_grid(species~.)
+```
+*The Adelie species has the most NAs for `sex`. The Chinstrap species shows the least sexual dimorphism.*
+
+### 4.2 (2 pts)
+
+###### Now, take `penguins_2007` and, using `ggplot`, create a scatterplot of `flipper_length_mm` (x-axis) against the `bill_ratio` variable. Does it look like there is a relationship between length-to-depth ratio and the lengths? To see more clearly, add `geom_smooth(method="lm")` to the plot.
+
+```{R}
+penguins_2007 %>% ggplot(aes(x=flipper_length_mm, y=bill_ratio)) + geom_point() + geom_smooth(method = "lm")
+```
+*There appears to be a postive relationship between flipper length and bill ratio.*
+
+### 4.3 (2 pts)
+
+###### Does your answer change when you consider each species individually instead of all together? To see more clearly, duplicate the plot from before but additionally, in the main `ggplot()` function, map `species` to color so each species gets its own color and regression trendline.
+
+###### Compare this plot with the previous one (in 4.2) and discuss whether the relationship between flipper length and bill length-to-depth ratio changes when you look at it overall versus within each species.
+
+```{R}
+penguins_2007 %>% ggplot(aes(x=flipper_length_mm, y=bill_ratio, color=species)) + geom_point() + geom_smooth(method = "lm")
+```
+*When considering each species separately, it does not appear that there is a positive relationship between flipper length and bill ratio (i.e. actually more of no correlation/slightly negative). The apparant postive relationship was resulted from to inherent differences in species characteristics.*
+
+### 4.4 (3 pts)
+
+###### Finally, let's make a plot using the original `penguins` dataset (not just the 2007 data). Forewarning: This will be very busy plot!
+
+###### Map `body_mass_g` to the x-axis, `flipper_length_mm` to the y-axis, `species` to color, and `island` to shape and make a scatterplot. Using facet_wrap, facet the plots by `year`. Find a way to clean up the x-axis labels using scale_x_continuous (either include fewer breaks, e.g., with n.breaks=3, or rotate the ones that are there). 
+
+###### Does there appear to be a relationship between body mass and flipper length overall? Is there a relationship within each species?
+
+###### What happens to the distribution of flipper lengths for species over time (do you see more or less species overlap for this variable in 2007 relative to 2009)?
+
+
+```{R}
+penguins %>% ggplot(aes(x=body_mass_g, y=flipper_length_mm, color=species, shape=island)) + geom_point() + facet_wrap(~year) +
+  scale_x_continuous(n.breaks = 3)
+```
+*There appears to be a relationship between body mass and flipper length, across both the overall distribution of penguins and within each species. Over the span of three years, the distribution of flipper lengths for species became more overlapped.*
+
+
+```{R, echo=F}
+## DO NOT DELETE THIS BLOCK!
+sessionInfo()
+Sys.time()
+Sys.info()
+```

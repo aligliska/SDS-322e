@@ -1,0 +1,368 @@
+---
+title: "HW 8"
+author: "SDS322E"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+---
+
+```{r global_options, include=FALSE}
+#DO NOT EDIT THIS CHUNK OR ANYTHING ABOVE IT!
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F, tidy=T, tidy.opts=list(width.cutoff=50), R.options=list(max.print=100,dplyr.print_max=100))
+```
+
+## Alice Gee, ag67642
+
+**Please submit as a knitted HTML file on Canvas before the due date**
+
+*For all questions, include the R commands/functions that you used to find your answer. Answers without supporting code will not receive credit.*
+
+> **Review of how to submit this assignment**
+> All homework assignments will be completed using R Markdown. These `.Rmd` files consist of text/syntax (formatted using Markdown) alongside embedded R code. 
+> When you have completed the assignment (by adding R code inside codeblocks and supporting text outside of the codeblocks), create your document as follows:
+
+> - Click the arrow next to the "Knit" button (above) 
+> - Choose "Knit to HTML" and wait; fix any errors if applicable
+> - Go to Files pane and put checkmark next to the correct HTML file
+> - Click on the blue gear icon ("More") and click Export
+> - Download the file and then upload to Canvas
+
+---
+
+### Question 1 (2 pts)
+
+#### For the string below, using `str_view_all` or `str_match_all` with a single regular expression, match one or more adjacent numbers/digits. Your matches should look like this:
+
+```
+ [1,] "12"   
+ [2,] "47"   
+ [3,] "48"   
+ [4,] "189"  
+ [5,] "2036" 
+ [6,] "314"  
+ [7,] "125"  
+ [8,] "789"  
+ [9,] "1450" 
+[10,] "564"  
+[11,] "90456"
+[12,] "7890" 
+```
+
+```{R}
+library(tidyverse)
+
+string1 <- "We have to extract these numbers 12, 47, 48 The integers numbers are also interesting: 189 2036 314 \',\' is a separator, so please extract these numbers 125,789,1450 and also these 564,90456 We like to offer you 7890$ per month in order to complete this task... we are joking"
+
+str_match_all(string1, "[0-9]+")
+```
+
+### Question 2 (2 pts)
+
+#### For the string below (string2), using `str_view_all` or `str_match_all` with a single regular expression, match all IP addresses.  Your matches should look like this:
+
+```
+ [1,] "213.92.153.167" 
+ [2,] "69.43.107.219"  
+ [3,] "69.43.112.233"  
+ [4,] "217.70.100.113" 
+ [5,] "74.125.186.208" 
+ [6,] "74.125.186.208" 
+ [7,] "140.105.63.158" 
+ [8,] "172.45.240.237" 
+ [9,] "217.70.177.60"  
+[10,] "216.34.90.16"   
+[11,] "69.43.85.253"   
+[12,] "213.121.184.130"
+[13,] "213.121.184.130"
+[14,] "140.105.63.164" 
+```
+
+```{R}
+string2 <-'Jan 13 00:48:59: DROP service 68->67(udp) from 213.92.153.167 to 69.43.107.219, prefix: "spoof iana-0/8" (in: eth0 69.43.112.233(38:f8:b7:90:45:92):68 -> 217.70.100.113(00:21:87:79:9c:d9):67 UDP len:576 ttl:64)
+Jan 13 12:02:48: ACCEPT service dns from 74.125.186.208 to firewall(pub-nic-dns), prefix: "none"  
+(in: eth0 74.125.186.208(00:1a:e3:52:5d:8e):36008 -> 140.105.63.158(00:1a:9a:86:2e:62):53 UDP len:82 ttl:38) 
+Jan 13 17:44:52: DROP service 68->67(udp) from 172.45.240.237 to 217.70.177.60, prefix: "spoof iana-0/8" 
+(in: eth0 216.34.90.16(00:21:91:fe:a2:6f):68 -> 69.43.85.253(00:07:e1:7c:53:db):67 UDP len:328 ttl:64)
+Jan 13 17:52:08: ACCEPT service http from 213.121.184.130 to firewall(pub-nic), prefix: "none"
+(in: eth0 213.121.184.130(00:05:2e:6a:a4:14):8504 -> 140.105.63.164(00:60:11:92:ed:1b):80 TCP flags: ****S* len:52 ttl:109)'
+
+
+str_match_all(string2, "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+")
+```
+
+### Question 3 (2 pts)
+
+#### For the same string (string2, defined above), using `str_view_all` or `str_match_all` with a single regular expression, match all MAC addresses. Your matches should look like this:
+
+```
+[1,] "38:f8:b7:90:45:92"
+[2,] "00:21:87:79:9c:d9"
+[3,] "00:1a:e3:52:5d:8e"
+[4,] "00:1a:9a:86:2e:62"
+[5,] "00:21:91:fe:a2:6f"
+[6,] "00:07:e1:7c:53:db"
+[7,] "00:05:2e:6a:a4:14"
+[8,] "00:60:11:92:ed:1b"
+```
+
+```{R}
+str_match_all(string2, "[0-9]+:..:..:..:..:..")
+```
+
+### Question 4 (2 pts)
+
+#### Using `str_view_all` or `str_match_all` with a single regular expression, match all FTP addresses in the string below (string 3). Your matches should look like this:
+
+```
+ [1,] "ftp://ftp7.br.FreeBSD.org/pub/FreeBSD/"
+ [2,] "ftp://ftp3.de.FreeBSD.org/pub/FreeBSD/"
+ [3,] "ftp://ftp.is.FreeBSD.org/pub/FreeBSD/" 
+ [4,] "ftp://ftp4.jp.FreeBSD.org/pub/FreeBSD/"
+ [5,] "ftp://ftp.no.FreeBSD.org/pub/FreeBSD/" 
+ [6,] "ftp://ftp3.no.FreeBSD.org/pub/FreeBSD/"
+ [7,] "ftp://ftp.pt.FreeBSD.org/pub/FreeBSD/" 
+ [8,] "ftp://ftp1.ro.FreeBSD.org/pub/FreeBSD/"
+ [9,] "ftp://ftp3.es.FreeBSD.org/pub/FreeBSD/"
+[10,] "ftp://ftp2.tw.FreeBSD.org/pub/FreeBSD/"
+[11,] "ftp://ftp6.uk.FreeBSD.org/pub/FreeBSD/"
+[12,] "ftp://ftp6.us.FreeBSD.org/pub/FreeBSD/"
+```
+
+```{R}
+string3 <-"Fedora Core 		ftp
+           Fedora Extras 	http 	ftp 	rsync
+           ftp://ftp7.br.FreeBSD.org/pub/FreeBSD/ (ftp)
+           ftp://ftp3.de.FreeBSD.org/pub/FreeBSD/ (ftp)
+           ftp://ftp.is.FreeBSD.org/pub/FreeBSD/ (ftp / rsync)
+           ftp://ftp4.jp.FreeBSD.org/pub/FreeBSD/ (ftp)
+           ftp://ftp.no.FreeBSD.org/pub/FreeBSD/ (ftp / rsync)
+           *\
+           ftp://ftp3.no.FreeBSD.org/pub/FreeBSD/ (ftp)
+           ftp://ftp.pt.FreeBSD.org/pub/FreeBSD/ (ftp)
+           ftp://ftp1.ro.FreeBSD.org/pub/FreeBSD/ (ftp / ftpv6)
+           ftp://ftp3.es.FreeBSD.org/pub/FreeBSD/ (ftp)
+           ftp://ftp2.tw.FreeBSD.org/pub/FreeBSD/ (ftp / ftpv6 / http / httpv6 / rsync / rsyncv6)
+           ftp://ftp6.uk.FreeBSD.org/pub/FreeBSD/ (ftp)
+           ftp://ftp6.us.FreeBSD.org/pub/FreeBSD/ (ftp / http)"
+
+
+str_match_all(string3, "ftp://ftp[^a-zA-Z]+[a-z]+\\.[a-zA-Z]+\\.[a-z]+/pub/FreeBSD/")
+```
+
+
+### Question 5 (2 pts)
+
+#### Using `str_view_all` or `str_match_all` with a single regular expression, match all $\LaTeX$ math-mode text (anything wrapped in `$`, including the `$`s) in the string below (string4).  Your matches should look like this:
+
+```
+ [1,] "$\\mu_{A_T}$"                                                     
+ [2,] "$\\sigma_{A_T}$"                                                  
+ [3,] "$A_T$"                                                            
+ [4,] "$\\rho_\\text{filler}$"                                           
+ [5,] "$\\rho_\\text{filler}=\\frac{\\sum_{T \\in \\mathcal{T} A_T}}{A}$"
+ [6,] "$A$"                                                              
+ [7,] "$\\mu_{C_T}$"                                                     
+ [8,] "$C_T$"                                                            
+ [9,] "$C_T = \\sigma_R+\\sigma_G+\\sigma_B$"                            
+[10,] "$\\sigma_R$"                                                      
+[11,] "$\\sigma_G$"                                                      
+[12,] "$\\sigma_B$"                                                      
+[13,] "$T$"                                                              
+[14,] "$P$"                                                              
+[15,] "$R$"                                                              
+[16,] "$C$"  
+```
+
+```{R}
+string4 <- "We try to quantitatively capture these characteristics by defining a set of indexes, which can be computed using the mosaic image and the corresponding ground truth:
+\\begin{itemize} 
+    \\item $\\mu_{A_T}$ and $\\sigma_{A_T}$, the mean and standard deviation of the tiles area $A_T$, respectively;
+    \\item $\\rho_\\text{filler}$, the ratio between the filler area and the overall mosaic are, computed as 
+$\\rho_\\text{filler}=\\frac{\\sum_{T \\in \\mathcal{T} A_T}}{A}$, being $A$ the area of the mosaic; 
+    \\item \\todo{does it worth?}; 
+    \\item \\todo{does it worth?};
+    \\item $\\mu_{C_T}$, the mean of the tiles \\emph{color dispersion} $C_T$,
+    being $C_T = \\sigma_R+\\sigma_G+\\sigma_B$, where $\\sigma_R$, $\\sigma_G$ and $\\sigma_B$ are the
+    standard deviation of the red, green and blue channel values of the pixels within the tile $T$.
+\\end{itemize}
+After applying a method to an image, we compare the segmented image (i.e., the result) against the ground truth and assess the performance according to the following three metrics:
+\\begin{itemize} 
+    \\item average tile precision $P$ 
+    \\item average tile recall $R$ 
+    \\item tile count error $C$
+\\end{itemize}"
+
+
+str_match_all(string4, "\\$[^$]+\\$")
+```
+
+
+### Question 6 (2 pts)
+
+#### Using `str_view_all` or `str_match_all` with a single regular expression, match text of the form `href=\"...\"` or `href='...'` in the string below (string5). Your matches should look like this:
+
+```
+ [1] "href=\"javascript:openurl('/Xplore/accessinfo.jsp')\""                                           
+ [2] "href=\"/iel5/4235/4079606/04079617.pdf?tp=&arnumber=4079617&isnumber=4079606\""                  
+ [3] "href='/xpl/RecentCon.jsp?punumber=10417'"                                                        
+ [4] "href=\"/xplorehelp/Help_start.html#Help_searchresults.html\""                                    
+ [5] "href=\"/xpl/contactus.jsp\""                                                                     
+ [6] "href=\"http://search.epnet.com/login.asp?profile=web&amp;defaultdb=geh\""                        
+ [7] "href=\"http://iimpft.chadwyck.com/\""                                                            
+ [8] "href=\"standartlar.html#tse\""                                                                   
+ [9] "href=\"http://www.gutenberg.org/\""                                                              
+[10] "href=\"http://proquestcombo.safaribooksonline.com/?portal=proquestcombo&amp;uicode=istanbultek\""
+[11] "href=\"http://www.scitation.org\""                                                               
+[12] "href=\"/online/aip.html\""                                                                       
+[13] "href=\"http://www3.interscience.wiley.com/journalfinder.html\""                                  
+[14] "href=\"/xpl/periodicals.jsp\""                                                                   
+[15] "href=\"http://www.ieee.org/products/onlinepubs/resources/XploreTutorial.pdf\""   
+```
+
+```{R}
+string5 <- "<a href=\"javascript:openurl('/Xplore/accessinfo.jsp')\" class=\"topUnderlineLinks\">                                            <A href=\"/iel5/4235/4079606/04079617.pdf?tp=&arnumber=4079617&isnumber=4079606\" class=\"bodyCopy\">PDF</A>(3141 KB)&nbsp;
+                        <A href='/xpl/RecentCon.jsp?punumber=10417'>Evolutionary Computation, 2005. The 2005 IEEE Congress on</A><br>
+                <td width=\"33%\" ><div align=\"right\"> <a href=\"/xplorehelp/Help_start.html#Help_searchresults.html\" class=\"subNavLinks\" target=\"blank\">Help</a>&nbsp;&nbsp;&nbsp;<a href=\"/xpl/contactus.jsp\" class=\"subNavLinks\">Contact Kimya ile ilgili çeþitli temel referans
+<a href=\"http://search.epnet.com/login.asp?profile=web&amp;defaultdb=geh\"
+<a href=\"http://iimpft.chadwyck.com/\" target=\"_parent\">International
+<a href=\"standartlar.html#tse\" target=\"_parent\">NFPA Standartlarý</a>
+<a href=\"http://www.gutenberg.org/\" target=\"_parent\">Project Gutenberg</a>
+<a href=\"http://proquestcombo.safaribooksonline.com/?portal=proquestcombo&amp;uicode=istanbultek\"
+<a href=\"http://www.scitation.org\" target=\"_parent\">Scitation</a>
+dergilerin listesini görmek için <a href=\"/online/aip.html\">bu yolu</a>
+<a href=\"http://www3.interscience.wiley.com/journalfinder.html\"
+               <td width=\"46%\"><a href=\"/xpl/periodicals.jsp\" class=\"dropDownNav\" accesskey=\"j\">Journals &amp; Magazines
+               <td><a href=\"http://www.ieee.org/products/onlinepubs/resources/XploreTutorial.pdf\" class=\"dropDownNav\">IEEE Xplore Demo</a></td>"
+
+
+str_match_all(string5, "href=[^\n> ]+")
+```
+
+
+### Question 7 (2 pts)
+
+#### Using `str_view_all` or `str_match_all` with a single regular expression, match all URLs in the string below (string6). Your matches should look like this
+
+```
+ [1,] "http://www.classmates.com/go/e/200988231/CC123101BT/CM00"                                                                        
+ [2,] "http://graphics.classmates.com/graphics/spacer.gif"                                                                              
+ [3,] "http://graphics.classmates.com/graphics/sp"                                                                                      
+ [4,] "http://itcapps.corp.enron.com/srrs/auth/emailLink.asp?ID=000000000053239&Page=Approval"                                          
+ [5,] "http://www.enrononline.com."                                                                                                     
+ [6,] "http://www.classmates.com/go/e/200988231/CC122401BC/CM00"                                                                        
+ [7,] "http://graphics.classmates.com/graphics/spacer.gif"                                                                              
+ [8,] "http://graphics.classmates.com/graphics/sp"                                                                                      
+ [9,] "http://www.btinternet.com/~pir8/arnie/,"                                                                                         
+[10,] "http://zzz1.net/rd/rd.asp?ZXU=562&ZXD=1471085&UID=1471085"                                                                       
+[11,] "http://www.egroups.com"                                                                                                          
+[12,] "http://isc.enron.com/site/doclibrary/user/"                                                                                      
+[13,] "http://esource.enron.com/worldmarket.asp"                                                                                        
+[14,] "http://esource.enron.com/worldmarket_CountryAnalysis.asp"                                                                        
+[15,] "http://ad.doubleclick.net/clk;3549492;6600300;c?http://www.sportingbetusa.com/english/casino/casinonew-fr.asp?isLogged=notlogged"
+[16,] "http://ad.doubleclick.net/clk;3549492;6600300;c?http://www.sportingbetusa.c"                                                     
+[17,] "http://isc.enron.com/site/"  
+```
+
+```{R}
+string6 <- "<http://www.classmates.com/go/e/200988231/CC123101BT/CM00>  <http://graphics.classmates.com/graphics/spacer.gif>  <http://graphics.classmates.com/graphics/sp 
+You have received this email because the requester specified you as their Manager. Please click http://itcapps.corp.enron.com/srrs/auth/emailLink.asp?ID=000000000053239&Page=Approval to review and act upon this request.     Request ID          : 000000000053239 Request Create Date
+ronOnline.   The following User ID and Password will give you access to live prices on the web-site http://www.enrononline.com.  User ID: ADM40601 Password: WELCOME!   (note these are case sensitive)    Please keep your User I
+<http://www.classmates.com/go/e/200988231/CC122401BC/CM00>  <http://graphics.classmates.com/graphics/spacer.gif>  <http://graphics.classmates.com/graphics/sp 
+http://www.btinternet.com/~pir8/arnie/, just click on the following hyperlink and complete the order form by Tuesday February 12, 2002.  http://zzz1.net/rd/rd.asp?ZXU=562&ZXD=1471085&UID=1471085  If you cannot link directly to the web site, simply cut and paste the address listed above into yo
+been successful getting in the group. To access the group should go to your web browser and type in http://www.egroups.com  The screen should show that you are a member of smu-betas group. When you replied to the original 
+mber and password. For more details on how to log-on to eHRonline, see step-by-step instructions at http://isc.enron.com/site/doclibrary/user/ 2. Navigate to the pay advice using the following navigation menus: ? Pay Information ? Paycheck I
+In addition to World Markets Energy information  <http://esource.enron.com/worldmarket.asp> and Country Analysis and Forecasting, <http://esource.enron.com/worldmarket_CountryAnalysis.asp>  
+<http://ad.doubleclick.net/clk;3549492;6600300;c?http://www.sportingbetusa.com/english/casino/casinonew-fr.asp?isLogged=notlogged> A WEEKEND PAIR-A-DICE <http://ad.doubleclick.net/clk;3549492;6600300;c?http://www.sportingbetusa.c 
+Mr. Skilling:  Your P number is P00500599.  For your convenience, you can also go to http://isc.enron.com/site/ under"
+
+str_match_all(string6, "http://[a-z0-9]+\\.[^> ]+")
+
+```
+
+### Question 8 (2 pts)
+
+#### Using `str_view_all` or `str_match_all` with a single regular expression, in the string below (string7), match sites of the form ANTAAT and GCRWTG, where A,C,G, and T are literal, while N represents any base (A,C,G,or T), R represents A or G, and W represents A or T.
+
+```{R}
+string7 <- "ATGGCAATAACCCCCCGTTTCTACTTCTAGAGGAGAAAAGTATTGACATGAGCGCTCCCGGCACAAGGGCCAAAGAAGTCTCCAATTTCTTATTTCCGAATGACATGCGTCTCCTTGCGGGTAAATCACCGACCGCAATTCATAGAAGCCTGGGGGAACAGATAGGTCTAATTAGCTTAAGAGAGTAAATCCTGGGATCATTCAGTAGTAACCATAAACTTACGCTGGGGCTTCTTCGGCGGATTTTTACAGTTACCAACCAGGAGATTTGAAGTAAATCAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAAGGCTAGAATTACTTACCGGCCTTTTCCATGCCTGCGCTATACCCCCCCACTCTCCCGCTTATCCGTCCGAGCGGAGGCAGTGCGATCCTCCGTTAAGATATTCTTACGTGTGACGTAGCTATGTATTTTGCAGAGCTGGCGAACGCGTTGAACACTTCACAGATGGTAGGGATTCGGGTAAAGGGCGTATAATTGGGGACTAACATAGGCGTAGACTACGATGGCGCCAACTCAATCGCAGCTCGAGCGCCCTGAATAACGTACTCATCTCAACTCATTCTCGGCAATCTACCGAGCGACTCGATTATCAACGGCTGTCTAGCAGTTCTAATCTTTTGCCAGCATCGTAATAGCCTCCAAGAGATTGATGATAGCTATCGGCACAGAACTGAGACGGCGCCGATGGATAGCGGACTTTCGGTCAACCACAATTCCCCACGGGACAGGTCCTGCGGTGCGCATCACTCTGAATGTACAAGCAACCCAAGTGGGCCGAGCCTGGACTCAGCTGGTTCCTGCGTGAGCTCGAGACTCGGGATGACAGCTCTTTAAACATAGAGCGGGGGCGTCGAACGGTCGAGAAAGTCATAGTACCTCGGGTACCAACTTACTCAGGTTATTGCTTGAAGCTGTACTATTTTAGGGGGGGAGCGCTGAAGGTCTCTTCTTCTCATGACTGAACTCGCGAGGGTCGTGAAGTCGGTTCCTTCAATGGTTAAAAAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATCTAGCGGCTGGCGTCTTGAATGCTCGGTCCCCTTTGTCATTCCGGATTAATCCATTTCCCTCATTCACGAGCTTGCGAAGTCTACATTGGTATATGAATGCGACCTAGAAGAGGGCGCTTAAAATTGGCAGTGGTTGATGCTCTAAACTCCATTTGGTTTACTCGTGCATCACCGCGATAGGCTGACAAAGGTTTAACATTGAATAGCAAGGCACTTCCGGTCTCAATGAACGGCCGGGAAAGGTACGCGCGCGGTATGGGAGGATCAAGGGGCCAATAGAGAGGCTCCTCTCTCACTCGCTAGGAGGCAAATGTAAAACAATGGTTACTGCATCGATACATAAAACATGTCCATCGGTTGCCCAAAGTGTTAAGTGTCTATCACCCCTAGGGCCGTTTCCCGCATATAAACGCCAGGTTGTATCCGCATTTGATGCTACCGTGGATGAGTCTGCGTCGAGCGCGCCGCACGAATGTTGCAATGTATTGCATGAGTAGGGTTGACTAAGAGCCGTTAGATGCGTCGCTGTACTAATAGTTGTCGACAGACCGTCGAGATTAGAAAATGGTACCAGCATTTTCGGAGGTTCTCTAACTAGTATGGATTGCGGTGTCTTCACTGTGCTGCGGCTACCCATCGCCTGAAATCCAGCTGGTGTCAAGCCATCCCCTCTCCGGGACGCCGCATGTAGTGAAACATATACGTTGCACGGGTTCACCGCGGTCCGTTCTGAGTCGACCAAGGACACAATCGAGCTCCGATCCGTACCCTCGACAAACTTGTACCCGACCCCCGGAGCTTGCCAGCTCCTCGGGTATCATGGAGCCTGTGGTTCATCGCGTCCGATATCAAACTTCGTCATGATAAAGTCCCCCCCTCGGGAGTACCAGAGAAGATGACTACTGAGTTGTGCGAT"
+
+str_match_all(string7, "A[ACGT]TAAT|GC[AG][AT]TG")
+```
+
+### Question 9a (2 pt)
+
+##### Let's scrape the text of the first chapter of Moby Dick from an ebook website
+
+```{R}
+library(rvest)
+url <- "https://standardebooks.org/ebooks/herman-melville/moby-dick/text/chapter-1"
+moby_html <- read_html(url)
+moby_html
+```
+
+##### Let's now grab the anything in paragraph/text nodes from the 
+
+```{R}
+moby_html %>%
+  html_nodes("p") %>% 
+  head()
+```
+
+##### Cool, now we have paragraphs from the first chapter. Let's convert this to a character vector
+
+```{R}
+moby_html %>%
+  html_nodes("p") %>% #grab all elements between <p> and </p>
+  html_text() -> moby_paragraphs
+```
+
+##### Take moby_paragraphs and collapse all paragraphs into a single character vector using paste or str_c, separating the paragraphs with a space. Save the result as moby_text below 
+
+```{R}
+# your code here
+```
+
+##### Now let's clean this up. First, we replace any emdash (note: it's not a hyphen!) with a space using `str_replace_all("—", " ")`. Then, manually (with regular expressions) remove all punctuation marks except hyphens (using str_remove_all or str_replace_all), and then convert to lowercase with tolower or str_to_lower. Overwrite moby_text with the clean version.
+
+```{R}
+moby_text <- moby_text %>% str_replace_all("—", " ")
+
+#your code here
+```
+
+##### Finally, split the resulting string (moby_text) into a list of words using str_split (split at one or more space). Pipe the result into unlist() to convert the resulting list into a character vector, and save it as `word`. Lastly, convert it into a dataframe with one word per row by running `moby_words <- as.data.frame(word)`
+
+```{R}
+# your code here
+```
+
+### Question 9b (1 pt)
+
+##### Now we can do cool things! Use mutate with str_length to compute the length of each word (call the variable length). What is the longest word in the introduction? (Note that should have 15 characters including a hyphen.)
+
+```{R}
+# your code here
+```
+
+### Question 9c (1 pts)
+
+##### Finally, let's remove the stopwords. `anti_join` `moby_words` to the the entire `stop_words` datset (all lexicons) to remove common/uninformative words. Compute the most frequently appearing word from the words that remain after removing stopwords. What is it?
+
+```{R}
+library(tidytext)
+stop_words <- stop_words
+
+# your code here
+```
+
+*your answer here*
+
+```{R, echo=F}
+## DO NOT DELETE THIS BLOCK!
+sessionInfo()
+Sys.time()
+Sys.info()
+```

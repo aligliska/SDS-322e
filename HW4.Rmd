@@ -1,0 +1,187 @@
+---
+title: "HW 4"
+author: "SDS322E"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+---
+
+```{r global_options, include=FALSE}
+#DO NOT EDIT THIS CHUNK OR ANYTHING ABOVE IT!
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F, tidy=T, tidy.opts=list(width.cutoff=50))
+```
+
+## Alice Gee, ag67642
+
+**Please submit as a knitted HTML file on Canvas before the due date.**
+
+*For all questions, include the R commands/functions that you used to find your answer. Answers without supporting code will not receive credit.*
+
+> #### Review of how to submit this assignment
+>All homework assignments will be completed using R Markdown. These `.Rmd` files consist of >text/syntax (formatted using Markdown) alongside embedded R code. 
+>When you have completed the assignment (by adding R code inside codeblocks and supporting text outside of the codeblocks), create your document as follows:
+
+> - Click the arrow next to the "Knit" button (above) 
+> - Choose "Knit to HTML"
+> - Go to Files pane and put checkmark next to the correct HTML file
+> - Click on the blue gear icon ("More") and click Export
+> - Download the file and then upload to Canvas
+
+---
+
+## Question 1:
+
+### 1.1 (2 pts) 
+
+##### Load the ggplot2 package, which contains the mpg dataset. It contains data from 38 popular car models in 1999 and in 2008. Using ggplot, make a histogram of `hwy` (EPA highway miles-per-gallon). Then, in a separate plot, use `stat_ecdf()` to make a cumulative density plot of the same variable. The bimodal distribution is most clear in the histogram, but how can you see it in the cumulative density plot?  Eyeballing the cumulative density plot, approximately what proportion of cars have a highway mpg of 20 or less? (if you want, confirm your suspicions by using mean on a logical vector). 
+
+```{R}
+library(ggplot2)
+gg <- ggplot(mpg, aes(x = hwy)) + geom_histogram()
+gg2 <- ggplot(mpg, aes(x = hwy)) + stat_ecdf()
+gg
+gg2
+mean(mpg$hwy <= 20)
+```
+*While most clear in the histogram, the bimodal distribution can be seen in the cumulative density plot in the sharper increase in slope. This can be seen in the corresponding hwy values that yield the two peaks in the histogram, are the same hwy values that have the most drastic increase in density on the cumulative density plot. The proportion of cars that have a highway mpg of 20 or less is approximately 38%*
+
+### 1.2 (2 pts)
+
+##### Now then, make a density plot of `cty` (city miles-per-gallon) and fill it by `class` of car. Add an alpha value of .8 to increase transparency. Eyeballing the plot, which two classes have the most overlap in their distributions? Which class has the least variation in `cty` mpg and which class has the most? 
+
+
+```{R}
+gg3 <- ggplot(mpg, aes(x = cty, fill = class)) + 
+  geom_density(alpha = 0.8)
+gg3
+
+```
+*The SUV and the pickup classes of cars have the most overlap in their distributions. The 2seater class had the least variation while the subcompact class had the greatest variation.*
+
+
+### 1.3 (2 pts) 
+
+##### Take your density plot from 1.2 and use `facet_grid()` to create a separate row for each `class` (remove alpha here if you want). Next, add the argument `scales="free_y"` to `facet_grid()` and describe in words what effect it has (compared to leaving it off) and how it could be potentially misleading.
+
+```{R}
+gg4 = gg3 + facet_grid(class~., scales = "free_y")
+gg5 = gg3 + facet_grid(class~.)
+gg4
+gg5
+```
+*The argument `scales = "free_y"` adjusts the scale of each plot such that the highest peak/point of each distribution is at the top of the plot (with the breaks/intervals for each plot adjusting accordingly). This could be misleading because it makes it seem like the distributions are have similar [maximum] densities and changes in density, when in reality the scale for each density measurement is different. *
+
+
+### 1.4 (2 pts) 
+
+##### Finally, make a two-dimensional density plot (using, e.g., `geom_density2d_filled`) to visualize the joint distribution of `cty` and `hwy`. Add `geom_jitter()` to show the data points but give a slight amount of random noise vertically and horizontally so that the points don't totally overlap. Describe which areas of the plot show the greatest density of cars and which show the least density of cars in terms of their city and highway mpg.
+
+```{R}
+gg6 <- ggplot(mpg, aes(cty, hwy)) + geom_density2d_filled() + 
+  geom_jitter(alpha = 0.8, color = "white", width = 0.1, height = 0.1)
+gg6
+```
+*On the 2d density plot, the areas that are darker ("dark navy") show the least density of cars while the lighter areas (i.e. light green, yellow) have the highest denisty of cars. In terms of their city mpg and highway mpg, the areas of highest density occurs between 15-20 city and 25-30 hwy mpg. This positive trend implicates that typical hwy mpg values are higher than city mpg. The lowest density areas occur from 25+ city mpg and 35+ hwy mpg.*
+
+
+## Question 2
+
+### 2.1 (1.5 pts) 
+
+##### Assume diastolic blood pressure is normally distributed in a certain population, with a mean of 67 mmHg and a standard deviation 13 mmHg. Use `pnorm()` to compute the probability of obtaining a value less than 60 mmHg from this distribution. Use `pnorm()` again to compute the probability of obtaining a value greater than 85 mmHg from this distribution. Finally, use `qnorm()` to find the 98th percentile of this distribution (the value which cuts of 98% of the distribution below it).
+
+```{R}
+pnorm(60, mean = 67, sd = 13)
+1 - pnorm(85, mean = 67, sd = 13)
+qnorm(p = 0.98, mean = 67, sd = 13)
+```
+*The probabiltiy of obtaining a value less than 60 mmHg is 0.2951292 and the probabiltiy of getting a value greater than 85 mmHg is 0.08308505. The value that cuts off hte 98% is 93.69874 mmHg.*
+
+
+### 2.2 (1.5 pts) 
+
+##### Below, we set the seed to 322 with `set.seed()` so our random draws match. With `rnorm()` take a sample of size 10000 (ten thousand) draws from a normal distribution with a mean of 67 and a standard deviation of 13. Using `mean()` on a logical vector, what proportion of the total draws are less than 60? What proportion are greater than 85? Using `quantile()`, What value in your sample represents the 98th percentile?
+
+
+```{R}
+set.seed(322) #leave this line alone
+
+samp <- rnorm(n=10000, mean=67, sd=13)
+
+mean(samp < 60)
+mean(samp > 85)
+quantile(samp, .98)
+```
+*The proportion of total draws that are less than 60 is 0.2954 and the proportion of total draws that are greater than 85 is 0.0864. The value at the 98th percentile is 93.88209. *
+
+
+### 2.3 (1 pts) 
+
+##### Hopefully you see the correspondence between question 2.1 and question 2.2 Why are your answers to question 2.2 close to those in question 2.1 but not exactly the same?
+
+*The values in 2.1 and 2.2 are similar but not exactly the same because 2.2 uses rnorm and generates a distribution based on a sample of random draws. With 10000 samples, there is a small room for deviation compared to the generated normal distribution using pnorm.*
+
+
+### 2.4 (4 pts) 
+
+##### Make your sample from question 2 into a dataframe and, using ggplot2, make a histogram of the sample by mapping the sample to the x-axis in the main `ggplot()` function and then adding the code `geom_histogram(aes(y=..density..))`. Then, overlay an density plot by adding `geom_density()`. Using `geom_vline(xintercept=)`, add solid vertical lines corresponding to the 2.5th and the 97.5th percentile of the sample (i.e., using `quantile`). Next overlay an actual normal distribution with a mean of 67 and a standard deviation of 13 using `geom_line()` with `dnorm` and `stat="function"`. Make it a different color to differentiate it from the empirical/sample density. Finally, using `geom_vline(xintercept=)`, add dashed vertical lines of the same new color corresponding to the 2.5th and the 97.5th percentile of the actual normal distribution (i.e., using `qnorm`).
+
+```{R}
+library(ggplot2)
+df <- as.data.frame(samp)
+lower <- quantile(samp, 0.025)
+upper <- quantile(samp, 0.975)
+lower2 <- qnorm(p= 0.025, mean = 67, sd = 13)
+upper2 <- qnorm(p = 0.975, mean = 67, sd = 13)
+gg = ggplot(df, aes(x=samp)) + geom_histogram(aes(y=..density..)) + 
+  geom_density() + geom_vline(xintercept=lower) + 
+  geom_vline(xintercept=upper) + geom_line(stat = "function", fun=dnorm, 
+  args = list(mean=67, sd = 13), color = "red") + 
+  geom_vline(xintercept= lower2, color = "red") + 
+  geom_vline(xintercept= upper2, color = "red")
+gg
+```
+
+## Question 3
+
+### 3.1 (2 pts) 
+
+##### Using `dplyr` functions (filter, summarize; do not use any [] or $) and the `quakes` dataset, What is the mean of the variable `mag` when `depth` is *greater than* the median depth? What is the mean of the variable `mag` when `depth` is *less than* the median depth?
+
+```{R}
+library(dplyr)
+quakes %>% filter(depth > median(depth)) %>% summarize(mean(mag))
+quakes %>% filter(depth < median(depth)) %>% summarize(mean(mag))
+```
+*The mean of the variable `mag` when depth is greater than the median depth is 4.5232. The mean of the variable `mag` when depth is less than the median depth is 4.7176.*
+
+### 3.2 (1 pts) 
+
+##### Using `dplyr` and the `quakes` dataset, create a new variable called `depth_m` that gives `depth` in meters rather than kilometers. Use `mutate()` *only once* to achieve this! Do not use any [] or $.
+
+```{R}
+quakes %>% mutate(depth_m = depth*1000)
+head(quakes)
+```
+
+### 3.3 (1 pts) 
+
+##### Finally, using ggplot, take the quakes dataset and make a scatterplot of `long` (x-axis) and `lat` (y-axis) and color the points by `depth`. Add `coord_map()` to scale axes with mercator projection (if this doesn't work, use coord_fixed to make x- and y-axis scales the same). Optionally, add the extra code below to overlay world map data for this region using the code provided below.
+
+```{R}
+library(tidyverse)
+library(maps) #install.packages("maps") if not on the servers
+world <- map_data("world")
+
+ggplot(quakes)+geom_point(aes(long,lat,color=depth))+geom_polygon(aes(long, lat, group=group), data = world, fill = "red") + xlim(150,200)+ylim(-50,0) + 
+  coord_map()
+```
+
+
+```{R, echo=F}
+## DO NOT DELETE OR MODIFY THIS CHUNK: IT MUST BE PRESENT TO RECEIVE CREDIT FOR THE ASSIGNMENT
+sessionInfo(); Sys.time(); Sys.info()
+```
