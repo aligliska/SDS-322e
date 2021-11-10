@@ -1,2 +1,2 @@
-# test
-sds 322e
+# SDS-322e
+Elements of Data Science
