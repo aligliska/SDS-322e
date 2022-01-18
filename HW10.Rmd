@@ -1,0 +1,321 @@
+---
+title: "HW 10"
+author: "SDS 322E"
+date: ""
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+#LEAVE THIS CHUNK ALONE!
+library(knitr)
+opts_chunk$set(fig.align="center", fig.height=5, message=FALSE, warning=FALSE, fig.width=8, tidy.opts=list(width.cutoff=60),tidy=TRUE)
+
+class_diag <- function(score, truth, positive, cutoff=.5){
+
+  pred <- factor(score>cutoff,levels=c("TRUE","FALSE"))
+  truth <- factor(truth==positive, levels=c("TRUE","FALSE"))
+
+  tab<-table(truth, pred)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[1,1]/rowSums(tab)[1]
+  spec=tab[2,2]/rowSums(tab)[2]
+  ppv=tab[1,1]/colSums(tab)[1]
+
+#CALCULATE F1
+  f1=2*(sens*ppv)/(sens+ppv)
+  
+#CALCULATE EXACT AUC
+  truth<-as.numeric(truth=="TRUE")
+  ord<-order(score, decreasing=TRUE)
+  score <- score[ord]; truth <- truth[ord]
+  TPR=cumsum(truth)/max(1,sum(truth))
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  dup<-c(score[-1]>=score[-length(score)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+  round(data.frame(acc,sens,spec,ppv,f1,ba=(sens+spec)/2,auc, row.names = "Metrics"),4)
+}
+```
+
+## Alice Gee, ag67642
+
+**Please submit as a knitted HTML file on Canvas before the due date**
+
+*For all questions, include the R commands/functions that you used to find your answer. Answers without supporting code will not receive credit.*
+
+> ### How to submit this assignment
+> All homework assignments will be completed using R Markdown. These `.Rmd` files consist of text/syntax (formatted using Markdown) alongside embedded R code. 
+> When you have completed the assignment (by adding R code inside codeblocks and supporting text outside of the codeblocks), create your document as follows:
+
+> - Click the "Knit" button (above) to create an .html file
+> - Open the html file in your internet browser to view
+> - Go to `File > Print` and print your .html file to a .pdf
+> - (or knit to PDF)
+> - Upload the .pdf file to Canvas
+
+
+---
+
+## Question 1 
+
+Back to the Pokemon dataset! (Sorry if that's not your thing...)
+
+### 1a. (3 pts) 
+
+First, run the following code to read in the data and drop the unnecessary variables. With the resulting dataset `poke`, how many are Legendary? How many are not? Using ggplot, make a scatterplot of HP (y-axis) against Attack (x-axis), and color the points by Legendary status. Describe what you see in words (no real correct answer). 
+
+```{R}
+library(tidyverse)
+library(ggplot2)
+poke<-read.csv("http://www.nathanielwoodward.com/Pokemon.csv")
+poke<-poke%>%dplyr::select(-`X.`,-Total)
+
+poke %>% filter(Legendary == "True") %>% summarize(n())
+poke %>% filter(Legendary == "False") %>% summarize(n())
+poke %>% ggplot(aes(x = Attack, y = HP, color = Legendary)) + geom_point()
+```
+
+*There are 65 legendary Pokemon and 735 non-legendary Pokemon. While there is a slight positive correlation between `Attack` and `HP` for non-legendary Pokemon, this trend does not exist for legendary Pokemon (with HP between 50-150 and Attack from 50+).*
+
+
+### 1b. (2 pts) 
+
+Run the following code to predict Legendary from HP and Attack using logistic regression. 
+
+Generate predicted score/probabilities for your original observations using `predict` and save them as an object called `prob_reg`. Use them to compute classification diagnostics with the `class_diag()` function from class or the equivalent: it is declared in the preamble above so it gets loaded when you knit. If you go up and run it, you should be able to use it in any subsequent code chunk). How well is the model performing per AUC?
+
+```{R}
+logistic_fit <- glm(Legendary=="True" ~ Attack + HP, data=poke, family="binomial")
+prob_reg <- predict(logistic_fit, type = "response")
+class_diag(prob_reg, poke$Legendary, positive = "True")
+```
+
+*The model per AUC is performing strongly, with a metric of 0.8581.*
+
+
+### 1c. (2 pts) ***
+
+Now perform 10-fold cross validation with this model by hand like we did in class. Summarize the results by reporting average classification diagnostics (e.g., from `class_diags()`) across the ten folds (you might get a `NaN` for ppv, which is fine). Do you see a noticeable decrease in AUC when predicting out of sample (i.e., does this model shows signs of overfitting)?
+
+```{R}
+set.seed(322)
+k=10
+
+data<-sample_frac(poke) #randomly order rows
+folds <- rep(1:k, length.out=nrow(data)) #create folds
+
+diags<-NULL
+for(i in 1:k){
+  # create training and test sets
+  train<-data[folds!=i,] 
+  test<-data[folds==i,] 
+  truth<-test$Legendary
+
+  # train model
+  fit <- glm(Legendary=="True" ~ Attack + HP, data=train, family="binomial")
+
+  # test model
+  probs <- predict(fit, newdata = test, type = "response")
+
+  # get performance metrics for each fold
+  diags<-rbind(diags,class_diag(probs,truth, positive="True")) 
+}
+
+#average performance metrics across all folds
+summarize_all(diags,mean)
+```
+
+*`acc` had a score of 0.91625, `sens` had a score of 0.14832, `spec` had a score of 0.98918, `ppv` and `f1` both have "NaN", `ba` had a score of 0.56878, and `auc` had a score of 0.8571. Overall, it appears the score for AUC is relatively stable when comparing across the sample (and in this case, it appears to be a slightly larger value to the thousandths place). *
+
+### 1d. (2 pts) 
+
+Run the following code to predict Legendary from HP and Attack using k nearest neighbors (kNN).
+
+Generate predicted scores/probabilities for your original observations using `predict` and save them as an object called `prob_knn`. Use them to compute classification diagnostics with the `class_diag()` function above. How well is the model performing per AUC?
+
+```{R}
+library(caret)
+knn_fit <- knn3(Legendary=="True" ~ Attack + HP, data=poke)
+prob_knn <- predict(knn_fit,poke)
+class_diag(prob_knn[,1],poke$Legendary, positive="True")
+```
+
+*This model is not performing well per AUC, with a metric score of 0.0399.*
+
+
+### 1e. (2 pts) 
+
+Now perform 10-fold cross validation with this kNN model by hand as we did in class. I have reproduced the code below: All you need to do is replacing the capitalized comments accordingly. The rest of the code will summarize the results by reporting average classification diagnostics across the ten folds (you might get a `NaN` for ppv, which is fine). Do you see a real decrease in AUC when predicting out of sample? (Does this model shows signs of overfitting?) Which model (logistic regression vs kNN) performed the best on new data (i.e., in cross-validation)?
+
+```{R}
+set.seed(322)
+k=10
+
+data<-sample_frac(poke) #randomly order rows
+folds <- rep(1:k, length.out=nrow(data)) #create folds
+
+diags<-NULL
+
+i=1
+for(i in 1:k){
+# create training and test sets
+train<-data[folds!=i,] 
+test<-data[folds==i,] 
+truth<-test$Legendary
+
+# train model
+fit <- knn3(Legendary=="True" ~ Attack + HP, data=train)
+
+# test model
+probs <- predict(fit,newdata = test)[,2]
+
+# get performance metrics for each fold
+diags<-rbind(diags,class_diag(probs,truth, positive="True")) 
+}
+
+#average performance metrics across all folds
+summarize_all(diags,mean)
+```
+
+*Compared to the first AUC value, the AUC value calculated through kNN decreased from 0.8571 to 0.82643. For this data set, the logistic regression performed best on new data (i.e. cross validation).*
+
+### 1f. (1 pts) 
+
+Below, I'll plot the decision boundary for the kNN model trained on a random 9/10 of the data (the first plot), and then show how that model would classify the other 1/10 (the second plot). The blue boundary classifies points inside of it as Legendary (points outside are classified as not Legendary). Notice how the images correspond to the classification metrics (also provided).
+
+Now, looking at the two images, and describe how/where you see overfitting (i.e., the model fitting too closely to quirks in the training dataset that aren't likely to appear in the testing set) 
+
+Note that this example is a particularly egregious train/test split and is usually not so bad. We will talk in class about choosing k to avoid this.
+
+```{R}
+grid <- data.frame(expand.grid(Attack=seq(min(poke$Attack),max(poke$Attack),length.out=100),
+                               HP=seq(min(poke$HP), max(poke$HP),length.out=100)))
+set.seed(322)
+
+train <- poke %>% sample_frac(.9)
+test <- poke %>% anti_join(train, by="Name")
+
+knn_train <- knn3(Legendary=="True" ~ Attack + HP, data=train)
+
+yhat_knn<- predict(knn_train, newdata=grid)[,2]
+
+grid %>% mutate(p=yhat_knn) %>% 
+  ggplot(aes(Attack, HP)) + geom_point(data=train, aes(Attack, HP, color=Legendary)) + geom_contour(aes(z = p), 
+               breaks = 0.5) + ylim(1,255) + xlim(5, 190) + ggtitle("Training Set Example")
+
+class_diag(predict(knn_train,train)[,2],train$Legendary, positive="True")
+
+grid %>% mutate(p=yhat_knn) %>% 
+  ggplot(aes(Attack, HP)) + geom_point(data=test, aes(Attack, HP, color=Legendary)) + geom_contour(aes(z = p), 
+               breaks = 0.5) + ylim(1,255) + xlim(5, 190) + ggtitle("Testing Set Example")
+
+class_diag(predict(knn_train,test)[,2],test$Legendary, positive="True")
+```
+
+*In this example, there is a clear difference in metric score for AUC. In the training set, the model fitting appears to be well designed, with a metric of 0.9642. However, as we look at the testing set, we can see the established model fitting does not capture the correct data points, dropping the AUC value to 0.5625.*
+
+
+### 2a. (2 pts) 
+
+Below, you are given 6 malignant patients and 6 benign patients. The vectors contain their predicted probabilities (i.e., the probability of malignancy from some model). If you compare every malignant patient with every benign patient, how many times does a malignant patient have a higher predicted probability than a benign patient? What proportion of all the comparisons is that? You can easily do this by hand, but you might try to find a way to use `expand.grid()`, `outer()`, or even a loop to calculate this in R (use ?functionname to read about these functions).
+
+```{R}
+malig<-c(.49, .36, .58, .56, .61, .66)
+benign<-c(.42, .22, .26, .53, .31 ,.41)
+
+
+#example of how to use expand.grid
+#expand.grid(lets=c("A","B","C"),nums=c(1,2,3))
+
+#example of how to use outer()
+#outer(c(4,5,6),c(1,2,3),"-")
+
+temp <- expand_grid(malig = malig, benign = benign)
+
+count = 0
+for (i in 1:(nrow(temp))){
+  if (temp$malig[i] > temp$benign[i]){
+    count = count + 1
+  }
+}
+count
+count/nrow(temp)
+```
+
+*Out of 36 comparisons, 32 instances show that malignant patients have a higher predicted probability than a benign patient. Overall, 0.8888889 of all comparisons are consistent with this conclusion.*
+
+### 2b. (1 pts) 
+
+Now, treat the predicted probabilities as the response variable and perform an Wilcoxon/Mann-Whitney U test in R using `wilcox.test(group1, group2)` where group1 is `malig` and group2 is `benign`. Don't worry about the details, but note that this is a test of the hypothesis that the distribution of predicted probabilities for both groups (malig and benign) is equal. What does your W/U statistic equal (remember this number)?
+
+```{R}
+wilcox.test(malig, benign)
+```
+
+*With a W value of 32, the p-value is 0.02597.*
+
+### 2c. (2 pts) 
+
+Now, tidy this data by creating a dataframe and putting all predicted probabilities into one column and malignant/benign labels in another (you should end up with twelve rows, one for each observation). Use this data and ggplot to make a graph of the distribution of probabilities for both groups (histogram): fill by group. Leave default binwidth alone (it will look kind of like a barcode). Eyeballing and counting manually, for each benign (red) compute the number of malignants (blue) it is greater than (blue) and add them all up. This is the number of times a benign has a higher predicted probability than a malignant! In 1a you found the number of times a malignant beats a benign (i.e., has a higher predicted probability than a benign): What do those two numbers add up to?
+
+```{R}
+library(tidyverse)
+joined_set <- data_frame(malig, benign)
+joined_set <- joined_set %>% pivot_longer(1:2, names_to = "Observation", values_to = "Probability")
+joined_set %>% ggplot(aes(x = Probability, fill = Observation)) + 
+  geom_bar(aes(color = Observation))
+```
+
+*The total number of times a benign had a higher probability than malignant was 4 instances, compared to the 32 times malignant was more likely to be predicted than benign. When added up, these two numbers equal 36, which is the total number of comparisons conducted in 2a.*
+
+
+### 2d. (2 pts)
+
+Set the cutoff/threshold at .2, .25, .3, .35, .37, .4, .45, .5, .55, .57, .6, .65, .7 and for for each cutoff, compute the true-positive rate (TPR) and the false-postive rate (FPR). You may do this manually, but I encourage you to try to figure out a way to do it in R (e.g., using `expand.grid` and `dplyr` functions). Save the TPR and FPR for each cut-off. Then make a plot of the TPR (y-axis) against the FPR (x-axis) using geom_path.
+
+```{R}
+cutoffs<-c(.2, .25, .3, .35, .37, .4, .45, .5, .55, .57, .6, .65, .7)
+
+temp1 <- expand_grid(cutoff = cutoffs, values = joined_set$Probability)
+temp1 <- inner_join(temp1, joined_set, by = c("values" = "Probability"))
+temp1 <- temp1 %>% mutate(y_hat = NA) 
+
+for (i in 1:(nrow(temp1))){
+  temp1$y_hat[i] = ifelse(temp1$cutoff[i] < temp1$values[i], "malig", "benign")
+}
+temp1 <- temp1 %>% mutate(y_hat = factor(y_hat, levels=c("malig", "benign")))
+
+table(actual = temp1$Observation, predicted = temp1$y_hat)
+
+store <- data.frame(matrix(NA, nrow = 13))
+store <- store %>% mutate(TPR = NA) %>% mutate(FPR = NA)
+store <- store %>% select(TPR, FPR)
+
+for (i in 1:length(cutoffs)){
+  temp2 <- temp1 %>% filter(cutoff == cutoffs[i])
+  store$TPR[i] <- mean(temp2$y_hat[temp2$Observation=="malig"]=="malig")
+  store$FPR[i] <- mean(temp2$y_hat[temp2$Observation=="benign"]=="malig")
+}
+store
+store %>% ggplot(aes(x = FPR, y = TPR)) + geom_path()
+```
+
+### 2e. (1 pt) 
+
+Use the `class_diag()` function to calculate the AUC (and other diagnostics on this data). Where in this assignment have you seen that AUC number before? (If you haven't seen that number before, go back and redo 2a and make sure you are answering both questions!)
+
+```{R}
+class_diag(score = temp1$values, truth = temp1$Observation, positive = "malig")
+```
+
+*This AUC value of 0.8889 is the same value we calculated in 2a, which is the proportion of malignant patients that have a higher predicted probability than benign patients.*
+
+```{R, echo=F}
+## DO NOT DELETE THIS CHUNK!
+sessionInfo()
+Sys.time()
+Sys.info()
+```
